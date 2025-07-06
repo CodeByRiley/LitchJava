@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
+import com.codebyriley.Util.Log;
 
 public class TextureLoader {
 
@@ -43,22 +44,28 @@ public class TextureLoader {
             // Store dimensions
             texture.mWidth = width.get(0);
             texture.mHeight = height.get(0);
+            texture.mPath = path;
             
             // Generate OpenGL texture
             texture.mId = glGenTextures();
+            Log.checkGLErrorDetailed("TextureLoader.LoadTexture", "glGenTextures");
             glBindTexture(GL_TEXTURE_2D, texture.mId);
+            Log.checkGLErrorDetailed("TextureLoader.LoadTexture", "glBindTexture");
             
             // Set texture parameters
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
             glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            Log.checkGLErrorDetailed("TextureLoader.LoadTexture", "glTexParameteri");
             
             // Upload texture data
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, texture.mWidth, texture.mHeight, 0, GL_RGBA, GL_UNSIGNED_BYTE, imageData);
+            Log.checkGLErrorDetailed("TextureLoader.LoadTexture", "glTexImage2D");
             
             // Generate mipmaps
             glGenerateMipmap(GL_TEXTURE_2D);
+            Log.checkGLErrorDetailed("TextureLoader.LoadTexture", "glGenerateMipmap");
             
             // Unbind texture
             glBindTexture(GL_TEXTURE_2D, 0);
@@ -66,7 +73,7 @@ public class TextureLoader {
             // Free STB image data
             STBImage.stbi_image_free(imageData);
             
-            System.out.println("Loaded texture: " + path + " (" + texture.mWidth + "x" + texture.mHeight + ")");
+            Log.info("Loaded texture: " + path + " (" + texture.mWidth + "x" + texture.mHeight + ")");
         }
         
         return texture;
@@ -132,7 +139,7 @@ public class TextureLoader {
             // Free STB image data
             STBImage.stbi_image_free(imageData);
             
-            System.out.println("Loaded texture: " + path + " (" + texture.mWidth + "x" + texture.mHeight + ")");
+            Log.info("Loaded texture: " + path + " (" + texture.mWidth + "x" + texture.mHeight + ")");
         }
         
         return texture;
@@ -164,6 +171,7 @@ public class TextureLoader {
     // Method to bind a texture for rendering
     public static void BindTexture(Texture texture) {
         if (texture != null && texture.mId != 0) {
+            Log.traceEveryNFrames("[TextureLoader] BindTexture: textureId=" + texture.mId, 120);
             glBindTexture(GL_TEXTURE_2D, texture.mId);
         }
     }
@@ -176,6 +184,7 @@ public class TextureLoader {
     // Method to delete a texture and free OpenGL resources
     public static void DeleteTexture(Texture texture) {
         if (texture != null && texture.mId != 0) {
+            Log.infoEveryNFrames("[TextureLoader] DeleteTexture: textureId=" + texture.mId, 120);
             glDeleteTextures(texture.mId);
             texture.mId = 0;
             texture.mWidth = 0;

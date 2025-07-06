@@ -9,17 +9,18 @@ public class TexturedComponent extends ComponentBase {
     public float mWidth;
     public float mHeight;
     public float mR, mG, mB, mA;
+    private boolean textureLoaded = false;
     
     public TexturedComponent(String texturePath, float width, float height) {
         super("TexturedComponent");
         mTexturePath = texturePath;
-        mTexture = TextureLoader.LoadTexture(texturePath);
         mWidth = width;
         mHeight = height;
         mR = 1.0f;
         mG = 1.0f;
         mB = 1.0f;
         mA = 1.0f;
+        // Don't load texture immediately - defer until needed
     }
     
     public TexturedComponent(String texturePath, float width, float height, float r, float g, float b, float a) {
@@ -31,6 +32,18 @@ public class TexturedComponent extends ComponentBase {
         mG = g;
         mB = b;
         mA = a;
+        // Don't load texture immediately - defer until needed
+    }
+    
+    public void loadTexture() {
+        if (!textureLoaded && mTexturePath != null && !mTexturePath.isEmpty()) {
+            try {
+                mTexture = TextureLoader.LoadTexture(mTexturePath);
+                textureLoaded = true;
+            } catch (Exception e) {
+                System.err.println("Failed to load texture: " + mTexturePath + " - " + e.getMessage());
+            }
+        }
     }
     
     public void setColor(float r, float g, float b, float a) {
@@ -47,9 +60,17 @@ public class TexturedComponent extends ComponentBase {
 
     public void SetTexture(Texture texture) {
         mTexture = texture;
+        textureLoaded = true;
     }
 
     public Texture GetTexture() {
+        if (!textureLoaded) {
+            loadTexture();
+        }
         return mTexture;
+    }
+    
+    public boolean isTextureLoaded() {
+        return textureLoaded && mTexture != null;
     }
 }

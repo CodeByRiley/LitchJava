@@ -1,6 +1,6 @@
 package com.codebyriley.Core.Scene.Entities;
 
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
+import com.codebyriley.Core.Rendering.BatchedRenderer;
 import com.codebyriley.Core.Scene.Entities.Components.TexturedComponent;
 
 public class TexturedEntity extends Entity {
@@ -31,21 +31,21 @@ public class TexturedEntity extends Entity {
         // Fixed update logic here
     }
     
-    @Override
-    public void Draw(Renderer renderer) {
-        // Get the textured component using the generic method
-        TexturedComponent texturedComp = GetComponent(TexturedComponent.class);
+    // @Override
+    // public void Draw(BatchedRenderer renderer) {
+    //     // Get the textured component using the generic method
+    //     TexturedComponent texturedComp = GetComponent(TexturedComponent.class);
         
-        if (texturedComp != null && texturedComp.mTexture != null) {
-            // Draw the textured quad
-            renderer.drawTexturedQuadBatch(
-                mTransform.mPosition.x, mTransform.mPosition.y,
-                texturedComp.mWidth, texturedComp.mHeight, 
-                texturedComp.mTexture.mId, 
-                texturedComp.mR, texturedComp.mG, texturedComp.mB, texturedComp.mA
-            );
-        }
-    }
+    //     if (texturedComp != null && texturedComp.mTexture != null) {
+    //         // Draw the textured quad
+    //         renderer.drawTexturedQuadBatch(
+    //             mTransform.mPosition.x, mTransform.mPosition.y,
+    //             texturedComp.mWidth, texturedComp.mHeight, 
+    //             texturedComp.mTexture.mId, 
+    //             texturedComp.mR, texturedComp.mG, texturedComp.mB, texturedComp.mA
+    //         );
+    //     }
+    // }
     
     // Convenience method to get the textured component
     public TexturedComponent getTexturedComponent() {

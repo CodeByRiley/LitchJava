@@ -1,16 +1,18 @@
-#version 450 core
+#version 330 core
 in vec4 vColor;
 in vec2 vTexCoord;
+layout(location = 0) out vec4 FragColor;
 
 uniform sampler2D uTexture;
 uniform bool uUseTexture;
 
-out vec4 FragColor;
-
 void main() {
     if (uUseTexture) {
-        FragColor = texture(uTexture, vTexCoord) * vColor;
+        // Sample texture and multiply by vertex color
+        vec4 texColor = texture(uTexture, vTexCoord);
+        FragColor = texColor * vColor;
     } else {
+        // Use vertex color only
         FragColor = vColor;
     }
 } 

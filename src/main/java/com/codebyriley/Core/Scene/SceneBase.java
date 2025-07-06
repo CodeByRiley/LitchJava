@@ -2,9 +2,10 @@ package com.codebyriley.Core.Scene;
 
 import java.util.ArrayList;
 
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
-import com.codebyriley.Core.Rendering.Text.TextRenderer;
+import com.codebyriley.Core.Rendering.BatchedRenderer;
+import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
 import com.codebyriley.Core.Scene.Entities.Entity;
+import com.codebyriley.Util.Log;
 
 public abstract class SceneBase {
     public ArrayList<Entity> entities = new ArrayList<>();
@@ -16,7 +17,7 @@ public abstract class SceneBase {
         if(!entities.contains(entity)) {
             entities.add(entity);
         } else {
-            System.out.println("Entity already added: " + entity.mName);
+            Log.warn("Entity already added: " + entity.mName);
         }
     }
 
@@ -68,5 +69,5 @@ public abstract class SceneBase {
 
     public abstract void Update(float dT);
     public abstract void FixedUpdate(float fixedDeltaTime);
-    public abstract void Draw(Renderer renderer, TextRenderer textRenderer);
+    public abstract void Draw(BatchedRenderer renderer, TextRenderer textRenderer);
 }

@@ -1,11 +1,18 @@
 package com.codebyriley.Core.Scene;
 
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
-import com.codebyriley.Core.Rendering.Text.FontLoader;
-import com.codebyriley.Core.Rendering.Text.TextRenderer;
+// TEMPLATE USAGE:
+// renderer.begin();
+// ... draw all batched quads ...
+// renderer.end();
+// Always call end() before scene swap or at the end of Draw().
+
+import com.codebyriley.Core.Rendering.BatchedRenderer;
+import com.codebyriley.Core.Rendering.UI.Text.FontLoader;
+import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
 import com.codebyriley.Core.Scene.Entities.Entity;
 import com.codebyriley.Core.Scene.Entities.TexturedEntity;
 import com.codebyriley.Core.Scene.Entities.Components.TexturedComponent;
+import com.codebyriley.Util.Math.Vector3f;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -15,19 +22,31 @@ import com.codebyriley.Core.Rendering.WindowBase;
 public class BatchDemoScene extends SceneBase {
     private FontLoader font;
     private float elapsedTime = 0.0f;
+    private boolean isInitialized = false;
     
-
 
     public BatchDemoScene(FontLoader font) {
         this.font = font;
-
+        // Don't initialize OpenGL resources here - defer until after rendering
+    }
+    
+    private void init() {
+        if (isInitialized) return;
+        
         // Create Demo Entity
         TexturedEntity demoEntity = new TexturedEntity("textures/ships/ship_E.png", 100, 100);
         AddEntity(demoEntity);
+        
+        isInitialized = true;
     }
     
     @Override
     public void Update(float dT) {
+        // Initialize on first update if not already done
+        if (!isInitialized) {
+            init();
+        }
+        
         elapsedTime += dT / 500.0f;
     }
     
@@ -38,9 +57,14 @@ public class BatchDemoScene extends SceneBase {
     }
     
     @Override
-    public void Draw(Renderer renderer, TextRenderer textRenderer) {
+    public void Draw(BatchedRenderer renderer, TextRenderer textRenderer) {
+        // Initialize on first draw if not already done
+        if (!isInitialized) {
+            init();
+        }
+        
         // Start batching
-        renderer.beginBatch();
+        renderer.begin();
         
 
         for (int i = 0; i < 200; i++) {
@@ -58,35 +82,13 @@ public class BatchDemoScene extends SceneBase {
             float[] dx = { -half,  half,  half, -half };
             float[] dy = { -half, -half,  half,  half };
         
-            // Compute rotated positions (not used for axis-aligned rendering)
-            // for (int j = 0; j < 4; j++) {
-            //     tempPositions[j] = centerX + dx[j] * cosA - dy[j] * sinA;
-            //     tempPositions[j] = centerY + dx[j] * sinA + dy[j] * cosA;
-            // }
-        
-            // If your renderer supports drawing arbitrary quads, use px/py for the corners.
-            // If not, you can only draw axis-aligned quads at (centerX, centerY) with size.
-        
-            // For axis-aligned (no rotation), just use:
-            // renderer.drawColoredQuadBatch(centerX - half, centerY - half, size, size, r, g, b, 0.7f);
-        
             // For color:
             float r = 0.5f + 0.5f * (float)Math.sin(elapsedTime + i * 0.1f);
             float g = 0.5f + 0.5f * (float)Math.cos(elapsedTime + i * 0.1f);
             float b = 0.5f + 0.5f * (float)Math.sin(elapsedTime * 0.5f + i * 0.1f);
         
-            // If you only support axis-aligned quads:
-            //renderer.drawColoredQuadBatch(centerX - half, centerY - half, size, size, r, g, b, 0.7f);
-            // If you want to support rotated quads, you need to extend your renderer.
-
-            // for (int j = 0; j < entities.size(); j++) {
-            //     Entity entity = entities.get(j);
-            //     if (entity.mIsVisible) {
-            //         if (entity.getClass() == TexturedEntity.class) {
-            //             renderer.drawTexturedQuadBatch(entity.mTransform.mPosition.x, entity.mTransform.mPosition.y, 10, 10, entity.GetComponent(TexturedComponent.class).mTexture.mId, 1, 1, 1, 1);
-            //         }
-            //     }
-            // }
+            // Draw colored quads with rotation
+            renderer.addQuad(centerX, centerY, size, size, 0.0f, 0.0f, 1.0f, 1.0f, r, g, b, 0.7f, 0);
         }
 
         // Draw textured quads (this will cause a batch flush and start a new batch)
@@ -96,31 +98,25 @@ public class BatchDemoScene extends SceneBase {
                 float x = 100 + i * 120;
                 float y = 400;
                 float size = 100;
-                float alpha = 0.5f + 0.5f * (float)Math.sin(elapsedTime + i);
-                renderer.drawTexturedQuadBatch(x, y, size, size, font.getTextureId(), 1.0f, 1.0f, 1.0f, alpha);
+                float alpha = 0.5f + 0.5f * (float)(Math.sin(elapsedTime + i));
+                renderer.addQuad(x, y, size, size, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f, 1.0f, alpha, font.getTextureId());
             }
         }
         
-
-        // Draw some more colored quads (new batch since we switched from textured)
-        // for (int i = 0; i < 20; i++) {
-        //     float x = (float)(Math.random() * WindowBase.windowWidth);
-        //     float y = (float)(Math.random() * WindowBase.windowHeight);
-        //     float size = 15.0f;
-        //     float r = (float)Math.random();
-        //     float g = (float)Math.random();
-        //     float b = (float)Math.random();
-        //     renderer.drawColoredQuadBatch(x, y, size, size, r, g, b, 0.6f);
-        // }
-        
         // End batching
-        renderer.endBatch();
+        renderer.end();
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_DEPTH_TEST);
-        textRenderer.drawText("Batched Demo", 175, 75, 0.75f, 1.0f, 1.0f, 1.0f);
+        if (textRenderer != null) {
+            textRenderer.drawText("Batched Demo", 175, 75, new Vector3f(1.0f, 1.0f, 1.0f), 0.75f);
+        }
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
+    }
+
+    public void forceInitialize() {
+        init();
     }
 } 

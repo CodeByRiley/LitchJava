@@ -1,6 +1,7 @@
 package com.codebyriley.Core.Rendering.Textures;
 
 import static org.lwjgl.opengl.GL33.*;
+import com.codebyriley.Util.Log;
 
 public class Texture {
     public int mId;
@@ -32,6 +33,7 @@ public class Texture {
     // Bind this texture for rendering
     public void bind() {
         if (mId != 0) {
+            Log.traceEveryNFrames("[Texture] bind: textureId=" + mId, 120);
             glBindTexture(GL_TEXTURE_2D, mId);
         }
     }
@@ -62,6 +64,7 @@ public class Texture {
     // Delete the texture and free OpenGL resources
     public void delete() {
         if (mId != 0) {
+            Log.infoEveryNFrames("[Texture] delete: textureId=" + mId, 120);
             glDeleteTextures(mId);
             mId = 0;
             mWidth = 0;

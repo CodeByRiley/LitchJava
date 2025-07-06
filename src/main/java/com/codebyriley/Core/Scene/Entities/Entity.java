@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
 import com.codebyriley.Core.Scene.Entities.Components.ComponentBase;
 import com.codebyriley.Util.Math.Transform;
 
@@ -128,5 +127,5 @@ public abstract class Entity {
 
     public abstract void Update();
     public abstract void FixedUpdate(float fixedDeltaTime);
-    public abstract void Draw(Renderer renderer);
+    //public abstract void Draw(BatchedRenderer renderer);
 }

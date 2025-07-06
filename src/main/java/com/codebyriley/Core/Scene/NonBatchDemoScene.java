@@ -1,7 +1,14 @@
 package com.codebyriley.Core.Scene;
 
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
-import com.codebyriley.Core.Rendering.Text.TextRenderer;
+// TEMPLATE USAGE:
+// renderer.begin();
+// ... draw all batched quads ...
+// renderer.end();
+// Always call end() before scene swap or at the end of Draw().
+
+import com.codebyriley.Core.Rendering.BatchedRenderer;
+import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
+import com.codebyriley.Util.Math.Vector3f;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -20,7 +27,7 @@ public class NonBatchDemoScene extends SceneBase {
     }
     
     @Override
-    public void Draw(Renderer renderer, TextRenderer textRenderer) {
+    public void Draw(BatchedRenderer renderer, TextRenderer textRenderer) {
         // Draw background colored quads (individual draw calls - inefficient)
         for (int i = 0; i < 200; i++) {
             float centerX = (float)(Math.sin(elapsedTime + i * 0.1f) * 100 + WindowBase.windowWidth / 2);
@@ -37,38 +44,27 @@ public class NonBatchDemoScene extends SceneBase {
             float[] dx = { -half,  half,  half, -half };
             float[] dy = { -half, -half,  half,  half };
         
-            // Compute rotated positions (not used for axis-aligned rendering)
-            // float[] px = new float[4];
-            // float[] py = new float[4];
-            // for (int j = 0; j < 4; j++) {
-            //     px[j] = centerX + dx[j] * cosA - dy[j] * sinA;
-            //     py[j] = centerY + dx[j] * sinA + dy[j] * cosA;
-            // }
-        
-            // If your renderer supports drawing arbitrary quads, use px/py for the corners.
-            // If not, you can only draw axis-aligned quads at (centerX, centerY) with size.
-        
-            // For axis-aligned (no rotation), just use:
-            // renderer.drawColoredQuadBatch(centerX - half, centerY - half, size, size, r, g, b, 0.7f);
-        
             // For color:
             float r = 0.5f + 0.5f * (float)Math.sin(elapsedTime + i * 0.1f);
             float g = 0.5f + 0.5f * (float)Math.cos(elapsedTime + i * 0.1f);
             float b = 0.5f + 0.5f * (float)Math.sin(elapsedTime * 0.5f + i * 0.1f);
         
-            // If you only support axis-aligned quads:
-            // renderer.drawColoredQuadBatch(centerX - half, centerY - half, size, size, r, g, b, 0.7f);
-            renderer.DrawSquare(centerX - half,centerY - half, size, size, r, g, b);
-            // If you want to support rotated quads, you need to extend your renderer.
+            // Draw individual quads (inefficient - no batching)
+            renderer.begin();
+            renderer.addQuad(centerX - half, centerY - half, size, size, 0.0f, 0.0f, 1.0f, 1.0f, r, g, b, 0.7f, 0);
+            renderer.end();
         }
         
         // Draw some larger colored quads
-        renderer.DrawSquare(100, 100, 200, 200, 1.0f, 0.0f, 0.0f);
-        renderer.DrawSquare(350, 100, 200, 200, 0.0f, 1.0f, 0.0f);
-        renderer.DrawSquare(600, 100, 200, 200, 0.0f, 0.0f, 1.0f);
+        renderer.begin();
+        renderer.addQuad(100, 100, 200, 200, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 0);
+        renderer.addQuad(350, 100, 200, 200, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 1.0f, 0.0f, 1.0f, 0);
+        renderer.addQuad(600, 100, 200, 200, 0.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 1.0f, 1.0f, 0);
+        renderer.end();
         
 
         // Draw some more colored quads (deterministic positions)
+        renderer.begin();
         for (int i = 0; i < 20; i++) {
             float x = (float)(Math.sin(elapsedTime + i * 0.5f) * WindowBase.windowWidth * 0.4f + WindowBase.windowWidth * 0.5f);
             float y = (float)(Math.cos(elapsedTime + i * 0.3f) * WindowBase.windowHeight * 0.4f + WindowBase.windowHeight * 0.5f);
@@ -76,13 +72,14 @@ public class NonBatchDemoScene extends SceneBase {
             float r = 0.5f + 0.5f * (float)Math.sin(elapsedTime + i * 0.2f);
             float g = 0.5f + 0.5f * (float)Math.cos(elapsedTime + i * 0.2f);
             float b = 0.5f + 0.5f * (float)Math.sin(elapsedTime * 0.5f + i * 0.2f);
-            renderer.DrawSquare(x, y, size, size, r, g, b);
+            renderer.addQuad(x, y, size, size, 0.0f, 0.0f, 1.0f, 1.0f, r, g, b, 1.0f, 0);
         }
+        renderer.end();
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
         glDisable(GL_DEPTH_TEST);
-        textRenderer.drawText("Non-Batched Demo", 175, 75, 1.0f, 1.0f, 1.0f, 1.0f);
+        textRenderer.drawText("Non-Batched Demo", 175, 75, new Vector3f(1.0f, 1.0f, 1.0f), 1.0f);
         glEnable(GL_DEPTH_TEST);
         glDisable(GL_BLEND);
     }

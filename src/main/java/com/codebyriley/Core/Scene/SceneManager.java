@@ -1,8 +1,9 @@
 package com.codebyriley.Core.Scene;
 
 import com.codebyriley.Core.Engine;
-import com.codebyriley.Core.Rendering.Primatives.Renderer;
-import com.codebyriley.Core.Rendering.Text.TextRenderer;
+import com.codebyriley.Core.Rendering.BatchedRenderer;
+import com.codebyriley.Core.Rendering.UI.UIManager;
+import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
 
 public class SceneManager {
     public static SceneTransitions mTransitionType;
@@ -13,7 +14,8 @@ public class SceneManager {
     private static float mTransitionElapsed = 0f;
     private static float mCurrentFade = 0f;
     private static boolean mFadingOut = true;
-    private static Renderer renderer;
+    private static BatchedRenderer sceneRenderer;
+    private static UIManager uiManager;
 
     public static void ChangeScene(SceneBase scene, SceneTransitions transitionType, float duration) {
         mNextScene = scene;
@@ -31,9 +33,9 @@ public class SceneManager {
             float eased = applyEasing(mTransitionType, t);
             mCurrentFade = mFadingOut ? eased : 1.0f - eased;
 
-            // Update both scenes during transition
+            // Only update the current scene during transition, not the next scene
+            // This prevents OpenGL resource creation during the rendering loop
             if (mCurrentScene != null) mCurrentScene.Update(dT);
-            if (mNextScene != null) mNextScene.Update(dT);
 
             if (t >= 1.0f && mFadingOut) {
                 // Switch scenes and start fade-in
@@ -69,8 +71,9 @@ public class SceneManager {
         }
     }
 
-    public static void Init(Renderer renderer) {
-        SceneManager.renderer = renderer;
+    public static void Init(BatchedRenderer sceneRenderer, UIManager uiManager) {
+        SceneManager.sceneRenderer = sceneRenderer;
+        SceneManager.uiManager = uiManager;
     }
 
     public static void SetScene(SceneBase scene) {
@@ -80,11 +83,12 @@ public class SceneManager {
     public static SceneBase GetCurrentScene() {
         return mCurrentScene;
     }
+    
     public static void FixedUpdate(float fixedDeltaTime) {
         if (mCurrentScene != null) mCurrentScene.FixedUpdate(fixedDeltaTime);
     }
 
-    public static void Draw(Renderer renderer, TextRenderer textRenderer) {
+    public static void Draw(BatchedRenderer renderer, TextRenderer textRenderer) {
         if (mCurrentScene != null) mCurrentScene.Draw(renderer, textRenderer);
     }
 }
