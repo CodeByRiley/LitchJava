@@ -1,21 +1,38 @@
 # LitchJava
 
-A Java-based project featuring GLSL shader integration.
+An LWJGL toy project.
 
-## Overview
+## Core Features
 
-LitchJava is a project that combines Java (98.7%) with GLSL shaders (1.3%), suggesting a focus on graphics programming or game development capabilities.
+### Graphics Engine
+- Advanced rendering pipeline with GLSL shader integration
+- Batched rendering system for optimized performance
+- Primitive shape rendering (rectangles, circles, lines)
+- Flexible UI framework with buttons, labels, and panels
+- Text rendering system
+- OpenGL-based graphics with error handling and monitoring
 
-## Features
+### Scene Management
+- Scene-based architecture for game state management
+- Demo scene showcasing rendering capabilities
+- Flexible scene transitions and state handling
 
-- Java-based core functionality
-- GLSL shader integration
-- [Additional features to be documented]
+### Input System
+- Mouse input handling with position and button state tracking
+- Keyboard input system
+- Event-based input processing
 
-## Requirements
+### Development Tools
+- Comprehensive logging system with multiple severity levels:
+  - Multiple output channels (console and file)
+  - Performance-oriented logging with frame-based suppression
+  - OpenGL error checking and debugging
+  - Configurable log levels (trace, debug, info, warn, error, fatal)
 
-- Java JDK (version to be specified)
-- Graphics card supporting OpenGL for GLSL shaders
+## Technical Requirements
+
+- Java JDK (17+)
+- Graphics card with OpenGL support for GLSL shaders
 - [Additional dependencies to be documented]
 
 ## Getting Started
