@@ -11,7 +11,7 @@ public class TexturedEntity extends Entity {
         // Add a textured component
         TexturedComponent texturedComp = new TexturedComponent(texturePath, width, height);
         AddComponent(texturedComp);
-    }
+    } 
     
     public TexturedEntity(String texturePath, float width, float height, float r, float g, float b, float a) {
         super(true, true);
@@ -22,7 +22,7 @@ public class TexturedEntity extends Entity {
     }
     
     @Override
-    public void Update() {
+    public void Update(float dT) {
         // Update logic here
     }
     

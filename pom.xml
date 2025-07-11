@@ -433,6 +433,16 @@
 		<artifactId>lwjgl3-awt</artifactId>
 		<version>${lwjgl3-awt.version}</version>
 	</dependency>
+	<dependency>
+		<groupId>com.google.code.gson</groupId>
+		<artifactId>gson</artifactId>
+		<version>2.10.1</version>
+	</dependency>
+	<dependency>
+		<groupId>org.reflections</groupId>
+		<artifactId>reflections</artifactId>
+		<version>0.10.2</version>
+	</dependency>
 </dependencies>
 
     <profiles>
@@ -513,7 +523,7 @@
                     <arguments>
                         <argument>-XstartOnFirstThread</argument>
                         <argument>-jar</argument>
-                        <argument>${project.build.directory}/${build.finalName}.jar</argument>
+                        <argument>${project.build.directory}/${project.build.finalName}.jar</argument>
                     </arguments>
                 </configuration>
             </plugin>

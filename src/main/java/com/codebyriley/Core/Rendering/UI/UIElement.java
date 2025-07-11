@@ -1,6 +1,7 @@
 package com.codebyriley.Core.Rendering.UI;
 
 import com.codebyriley.Core.Rendering.UIRenderer;
+import com.codebyriley.Util.Log;
 import com.codebyriley.Util.Math.Vector2f;
 import com.codebyriley.Util.Math.Vector3f;
 
@@ -56,7 +57,9 @@ public abstract class UIElement {
      * Handle mouse click events
      */
     public boolean onMouseClick(float mouseX, float mouseY, int button) {
-        if (!enabled || !visible) return false;
+        if (!enabled || !visible) {
+            return false;
+        }
         if (contains(mouseX, mouseY)) {
             return handleMouseClick(mouseX, mouseY, button);
         }
@@ -83,36 +86,33 @@ public abstract class UIElement {
      */
     protected void drawBackground(UIRenderer renderer) {
         if (!visible) return;
-        
+        float centerX = x + width / 2.0f;
+        float centerY = y + height / 2.0f;
         // Draw background
         if (backgroundAlpha > 0) {
             renderer.addQuad(
-                x, y, width, height,
+                centerX, centerY, width, height,
                 0.0f, 0.0f, 1.0f, 1.0f, // Full texture UV
                 backgroundColor.x, backgroundColor.y, backgroundColor.z, backgroundAlpha,
                 0 // White texture
             );
         }
-        
         // Draw border
         if (borderAlpha > 0 && borderThickness > 0) {
             // Top border
-            renderer.addQuad(x, y + height - borderThickness, width, borderThickness,
+            renderer.addQuad(centerX, y + height - borderThickness / 2.0f, width, borderThickness,
                 0.0f, 0.0f, 1.0f, 1.0f,
                 borderColor.x, borderColor.y, borderColor.z, borderAlpha, 0);
-            
             // Bottom border
-            renderer.addQuad(x, y, width, borderThickness,
+            renderer.addQuad(centerX, y + borderThickness / 2.0f, width, borderThickness,
                 0.0f, 0.0f, 1.0f, 1.0f,
                 borderColor.x, borderColor.y, borderColor.z, borderAlpha, 0);
-            
             // Left border
-            renderer.addQuad(x, y + borderThickness, borderThickness, height - 2 * borderThickness,
+            renderer.addQuad(x + borderThickness / 2.0f, centerY, borderThickness, height - 2 * borderThickness,
                 0.0f, 0.0f, 1.0f, 1.0f,
                 borderColor.x, borderColor.y, borderColor.z, borderAlpha, 0);
-            
             // Right border
-            renderer.addQuad(x + width - borderThickness, y + borderThickness, borderThickness, height - 2 * borderThickness,
+            renderer.addQuad(x + width - borderThickness / 2.0f, centerY, borderThickness, height - 2 * borderThickness,
                 0.0f, 0.0f, 1.0f, 1.0f,
                 borderColor.x, borderColor.y, borderColor.z, borderAlpha, 0);
         }

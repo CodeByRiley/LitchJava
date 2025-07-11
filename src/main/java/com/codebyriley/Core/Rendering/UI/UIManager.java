@@ -99,9 +99,10 @@ public class UIManager {
 
         // Render elements in order (first added = rendered first = background)
         for (UIElement element : elements) {
-            if (element.isVisible()) {
-                element.render(renderer);
-            }
+            element.render(renderer);
+            // if (element.isVisible()) {
+            //     element.render(renderer);
+            // }
         }
         
         renderer.end();
@@ -116,6 +117,22 @@ public class UIManager {
     public void onMouseMove(float mouseX, float mouseY) {
         lastMouseX = mouseX;
         lastMouseY = mouseY;
+        
+        // Handle dragging for sliders (check both direct elements and panel children)
+        if (mousePressed) {
+            for (UIElement element : elements) {
+                if (element instanceof Slider) {
+                    Slider slider = (Slider) element;
+                    if (slider.isDragging()) {
+                        slider.onMouseDrag(mouseX, mouseY);
+                        return;
+                    }
+                } else if (element instanceof Panel) {
+                    Panel panel = (Panel) element;
+                    panel.onMouseDrag(mouseX, mouseY);
+                }
+            }
+        }
         
         // Find the topmost element under the mouse
         UIElement newHoveredElement = null;
@@ -142,6 +159,10 @@ public class UIManager {
                 // Enter hover for new element
                 if (hoveredElement instanceof Button) {
                     ((Button) hoveredElement).setHovered(true);
+                }
+                // Handle dropdown hover
+                if (hoveredElement instanceof Dropdown) {
+                    ((Dropdown) hoveredElement).onMouseHover(mouseX, mouseY);
                 }
             }
         }
@@ -180,13 +201,21 @@ public class UIManager {
         lastMouseY = mouseY;
         mousePressed = false;
         
-        // Release any pressed buttons
+        // Release any pressed buttons and sliders (check both direct elements and panel children)
         for (UIElement element : elements) {
             if (element instanceof Button) {
                 Button buttonElement = (Button) element;
                 if (buttonElement.isPressed()) {
                     buttonElement.release();
                 }
+            } else if (element instanceof Slider) {
+                Slider slider = (Slider) element;
+                if (slider.isDragging()) {
+                    slider.onMouseRelease();
+                }
+            } else if (element instanceof Panel) {
+                Panel panel = (Panel) element;
+                panel.onMouseRelease(mouseX, mouseY, button);
             }
         }
     }
@@ -197,7 +226,9 @@ public class UIManager {
     public boolean onKeyPress(int key, int mods) {
         if (focusedElement != null && focusedElement.isEnabled()) {
             // Handle key events for focused element
-            // This can be extended for text input, etc.
+            if (focusedElement instanceof TextField) {
+                return ((TextField) focusedElement).onKeyPress(key, mods);
+            }
             return true;
         }
         return false;
@@ -208,6 +239,18 @@ public class UIManager {
      */
     public void onKeyRelease(int key, int mods) {
         // Handle key release events
+    }
+    
+    /**
+     * Handle character input
+     */
+    public boolean onCharInput(char character) {
+        if (focusedElement != null && focusedElement.isEnabled()) {
+            if (focusedElement instanceof TextField) {
+                return ((TextField) focusedElement).onCharInput(character);
+            }
+        }
+        return false;
     }
     
     /**

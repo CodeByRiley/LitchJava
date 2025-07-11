@@ -1,6 +1,8 @@
 package com.codebyriley.Core.Scene.Entities.Components;
 
 import com.codebyriley.Core.Scene.Entities.Entity;
+import com.codebyriley.Core.Scene.Entities.EntityBase;
+import com.google.gson.Gson;
 
 public abstract class ComponentBase {
     public int mId = 0;
@@ -10,7 +12,7 @@ public abstract class ComponentBase {
     public boolean mIsActive = true;
     public boolean mIsVisible = true;
 
-    public Entity mParent;
+    public EntityBase mParent;
 
     public ComponentBase(String name) {
         mId = System.identityHashCode(this);
@@ -25,11 +27,13 @@ public abstract class ComponentBase {
         return mName;
     }
 
-    public Entity getParent() {
+    public EntityBase getParent() {
         return mParent;
     }
 
-    public void setParent(Entity parent) {
+    public void setParent(EntityBase parent) {
         this.mParent = parent;
     }
+
+    public abstract void OnDeserialize(Gson gson);
 }

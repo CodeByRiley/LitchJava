@@ -1,31 +1,46 @@
 package com.codebyriley.Core;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.util.List;
+
 import org.lwjgl.glfw.*;
 import org.lwjgl.opengl.*;
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
 import static com.codebyriley.Core.Input.InputKeyboard.*;
+import static com.codebyriley.Core.Input.InputMouse.*;
+import static com.codebyriley.Util.AppdataPath.getAppdataPath;
 import com.codebyriley.Core.Rendering.WindowBase;
+import com.codebyriley.Core.Input.InputKeyboard;
+import com.codebyriley.Core.Input.InputMouse;
 import com.codebyriley.Core.Rendering.BatchedRenderer;
 import com.codebyriley.Core.Rendering.UIRenderer;
 import com.codebyriley.Core.Rendering.UI.UIManager;
 import com.codebyriley.Core.Rendering.UI.Text.FontLoader;
 import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
+import com.codebyriley.Core.Scene.BasicScene;
 import com.codebyriley.Core.Scene.SceneBase;
 import com.codebyriley.Core.Scene.SceneManager;
+import com.codebyriley.Core.Scene.SceneSerialisation;
 import com.codebyriley.Core.Scene.SceneTransitions;
-import com.codebyriley.Core.Scene.BatchDemoScene;
-import com.codebyriley.Core.Scene.NonBatchDemoScene;
-import com.codebyriley.Core.Scene.TextureDemoScene;
-import com.codebyriley.Core.Scene.UIDemoScene;
-import com.codebyriley.Core.Scene.RenderingDemoScene;
+import com.codebyriley.Core.Scene.Entities.Entity;
 import com.codebyriley.Util.Log;
+import com.codebyriley.Core.Scene.SceneSerialisation.SceneWithUI;
+import com.codebyriley.Core.Scene.SceneSerialisation.UIElementData;
+import com.codebyriley.Core.Rendering.UI.UIElement;
+import com.codebyriley.Core.Rendering.UI.UILayoutLoader;
+import com.codebyriley.Core.Rendering.UI.UIActionHandler;
+import com.codebyriley.Core.Rendering.UI.EngineUIActionHandler;
+import com.codebyriley.Core.Scene.Entities.EntityBase;
 
 public class Engine {
 
     private TextRenderer textRenderer;
     private FontLoader font;
     private FontLoader TypeLightSansFont;
+    private UIActionHandler uiActionHandler;
 
     private BatchedRenderer sceneRenderer;
     private UIRenderer uiRenderer;
@@ -42,11 +57,18 @@ public class Engine {
     private SceneTransitions pendingTransition = SceneTransitions.EASE_IN_OUT;
     private float pendingDuration = 0.25f;
 
-    public BatchDemoScene batchDemoScene;
-    public RenderingDemoScene renderingDemoScene;
-    public UIDemoScene uiDemoScene;
-    public TextureDemoScene textureDemoScene;
-    public NonBatchDemoScene nonBatchDemoScene;
+    private int bgColorIndex = 0;
+    private final float[][] bgColors = {
+        {1.0f, 0.0f, 0.0f}, // Red
+        {0.0f, 1.0f, 0.0f}, // Green
+        {0.0f, 0.0f, 1.0f}  // Blue
+    };
+
+    //public BatchDemoScene batchDemoScene;
+    //public RenderingDemoScene renderingDemoScene;
+    //public UIDemoScene uiDemoScene;
+    //public TextureDemoScene textureDemoScene;
+    //public NonBatchDemoScene nonBatchDemoScene;
 
     public static float deltaTime = 0.0f;
     public float lastFrame = 0.0f;
@@ -105,35 +127,90 @@ public class Engine {
         
         uiManager = new UIManager(uiRenderer);
         textRenderer = new TextRenderer(uiRenderer, font);
+        uiActionHandler = new EngineUIActionHandler(this);
         
         // Validate renderers
         Log.info("Renderers initialized successfully");
         Log.checkGLErrorDetailed("Engine.Init", "renderer initialization");
 
-        // Init Scenes
-        baseScene = new SceneBase() {
-            @Override
-            public void Update(float dT) { /* ... */ }
-            @Override
-            public void FixedUpdate(float fixedDeltaTime) { /* ... */ }
-            @Override
-            public void Draw(BatchedRenderer renderer, TextRenderer textRenderer) { /* ... */ }
-        };
+        // Check saves directory and load scene
+        if(!Files.exists(Paths.get(getAppdataPath() + "saves/"))) {
+            Log.info("Saves directory doesn't exist, creating at: " + getAppdataPath() + "saves/");
+            try {
+                Files.createDirectories(Paths.get(getAppdataPath() + "saves/"));
+            } catch (IOException e) {
+                Log.error("Failed to create saves directory: " + e.getMessage());
+            }
+            baseScene = new BasicScene("TestScene");
+        } else {
+            Log.info("Saves directory already exists: " + getAppdataPath() + "saves/");
+            Log.info("Attempting to load scene with UI");
+            
+            // Try to load the scene with UI first
+            SceneWithUI loaded = null;
+            try {
+                loaded = SceneSerialisation.LoadSceneWithUI("TestScene");
+            } catch (IOException e) {
+                Log.error("Failed to load scene with UI: " + e.getMessage());
+            }
+            
+            if (loaded != null && loaded.entities != null && !loaded.entities.isEmpty()) {
+                // Create a new BasicScene and add the loaded entities
+                baseScene = new BasicScene("TestScene");
+                for (EntityBase entity : loaded.entities) {
+                    // Convert EntityBase to Entity if needed
+                    if (entity instanceof Entity) {
+                        baseScene.AddEntity((Entity) entity);
+                    } else {
+                        // Create a new Entity with the same properties
+                        Entity newEntity = new Entity(entity.mIsActive, entity.mIsVisible);
+                        newEntity.mId = entity.mId;
+                        newEntity.mName = entity.mName;
+                        newEntity.mTransform = entity.mTransform;
+                        newEntity.mChildren = entity.mChildren;
+                        // Copy components
+                        for (var comp : entity.GetComponents()) {
+                            newEntity.AddComponent(comp);
+                        }
+                        baseScene.AddEntity(newEntity);
+                    }
+                }
+                
+                // Restore UI to UIManager
+                if (loaded.ui != null) {
+                    for (UIElementData elem : loaded.ui) {
+                        UIElement uiElem = UILayoutLoader.createElement(elem, textRenderer, uiActionHandler);
+                        if (uiElem != null) {
+                            uiManager.addElement(uiElem);
+                        }
+                    }
+                }
+            } else {
+                // Fallback to legacy scene loading
+                try {
+                    baseScene = SceneSerialisation.LoadScene("TestScene", BasicScene.class);
+                } catch (IOException e) {
+                    Log.error("Failed to load legacy scene: " + e.getMessage());
+                    baseScene = new BasicScene("TestScene");
+                }
+            }
+        }
 
         // Create demo scene to showcase batching
-        batchDemoScene = new BatchDemoScene(font);
-        renderingDemoScene = new RenderingDemoScene(sceneRenderer, uiRenderer, textRenderer);
-        textureDemoScene = new TextureDemoScene();
-        nonBatchDemoScene = new NonBatchDemoScene();
-        uiDemoScene = new UIDemoScene(uiRenderer, textRenderer);
+        //batchDemoScene = new BatchDemoScene(font);
+        //renderingDemoScene = new RenderingDemoScene(sceneRenderer, uiRenderer, textRenderer);
+        //textureDemoScene = new TextureDemoScene();
+        //nonBatchDemoScene = new NonBatchDemoScene();
+        //uiDemoScene = new UIDemoScene();
     
 
         // OpenGL debug output setup (requires OpenGL 4.3+)
         // glEnable(GL40.GL_DEBUG_OUTPUT_SYNCHRONOUS);
 
         // Init Scene Manager
-        SceneManager.Init(sceneRenderer, uiManager);
-        SceneManager.SetScene(batchDemoScene);
+        SceneManager.Init(sceneRenderer, uiManager, textRenderer);
+        SceneManager.SetScene(baseScene);
+        //SceneManager.SetScene(batchDemoScene);
         glfwSwapInterval(1);
         // Clear Window
         glClearColor(0.0f,0.0f,0.0f,0.0f);
@@ -239,6 +316,31 @@ public class Engine {
     public void PollEvents() {
         Log.checkGLErrorAuto();
         
+        // Update input systems
+        InputMouse.update();
+        InputKeyboard.update();
+        
+        // Update UI manager with mouse events
+        if (uiManager != null) {
+            float mouseX = (float)InputMouse.GetMouseX();
+            float mouseY = (float)InputMouse.GetMouseY();
+            
+            uiManager.onMouseMove(mouseX, mouseY);
+            
+            if (InputMouse.IsButtonJustPressed(InputMouse.MOUSE_BUTTON_LEFT)) {
+                uiManager.onMousePress(mouseX, mouseY, InputMouse.MOUSE_BUTTON_LEFT);
+            }
+            if (InputMouse.IsButtonJustReleased(InputMouse.MOUSE_BUTTON_LEFT)) {
+                uiManager.onMouseRelease(mouseX, mouseY, InputMouse.MOUSE_BUTTON_LEFT);
+            }
+            if (InputMouse.IsButtonJustPressed(InputMouse.MOUSE_BUTTON_RIGHT)) {
+                uiManager.onMousePress(mouseX, mouseY, InputMouse.MOUSE_BUTTON_RIGHT);
+            }
+            if (InputMouse.IsButtonJustReleased(InputMouse.MOUSE_BUTTON_RIGHT)) {
+                uiManager.onMouseRelease(mouseX, mouseY, InputMouse.MOUSE_BUTTON_RIGHT);
+            }
+        }
+        
         glfwPollEvents();
         if(IsKeyPressed(GLFW.GLFW_KEY_ESCAPE)) {
             ShouldClose = true;
@@ -246,52 +348,66 @@ public class Engine {
         if(IsKeyJustPressed(GLFW.GLFW_KEY_B)) {
             // Defer scene creation to avoid OpenGL state issues
             Log.info("Switching to Batch Demo Scene");
-            pendingScene = batchDemoScene;
+            //pendingScene = batchDemoScene;
             pendingTransition = SceneTransitions.EASE_IN_OUT;
             pendingDuration = 0.25f;
         }
         if(IsKeyJustPressed(GLFW.GLFW_KEY_N)) {
             // Defer scene creation to avoid OpenGL state issues
             Log.info("Switching to Non-Batch Demo Scene");
-            pendingScene = nonBatchDemoScene;
+            //pendingScene = nonBatchDemoScene;
             pendingTransition = SceneTransitions.EASE_IN_OUT;
             pendingDuration = 0.25f;
         }
         if(IsKeyJustPressed(GLFW.GLFW_KEY_T)) {
             // Defer scene creation to avoid OpenGL state issues
             Log.info("Switching to Texture Demo Scene");
-            pendingScene = textureDemoScene;
+            //pendingScene = textureDemoScene;
             pendingTransition = SceneTransitions.EASE_IN_OUT;
             pendingDuration = 0.25f;
         }
         if(IsKeyJustPressed(GLFW.GLFW_KEY_U)) {
             // Defer scene creation to avoid OpenGL state issues
             Log.info("Switching to UI Demo Scene");
-            pendingScene = uiDemoScene;
+            //pendingScene = uiDemoScene;
             pendingTransition = SceneTransitions.EASE_IN_OUT;
             pendingDuration = 0.25f;
         }
         if(IsKeyJustPressed(GLFW.GLFW_KEY_R)) {
             // Defer scene creation to avoid OpenGL state issues
             Log.info("Switching to Rendering Demo Scene");
-            pendingScene = renderingDemoScene;
+            //pendingScene = renderingDemoScene;
             pendingTransition = SceneTransitions.EASE_IN_OUT;
             pendingDuration = 0.25f;
+        }
+        if(IsKeyJustPressed(GLFW.GLFW_KEY_S)) {
+            // Defer scene creation to avoid OpenGL state issues
+            Log.info("Saving scene");
+            if(SceneManager.mCurrentScene != null) {
+                // Convert SceneBase entities to EntityBase for saving
+                List<EntityBase> entities = new java.util.ArrayList<>();
+                for (Entity entity : SceneManager.mCurrentScene.entities) {
+                    entities.add(entity);
+                }
+                saveCurrentSceneWithUI(entities);
+            } else {
+                Log.error("No scene to save");
+            }
+        }
+        if(IsKeyJustPressed(GLFW.GLFW_KEY_L)) {
+            // Defer scene creation to avoid OpenGL state issues
+            Log.info("Loading scene");
+            try {
+                SceneSerialisation.LoadScene("TestScene", BasicScene.class);
+            } catch (IOException e) {
+                Log.error("Failed to load scene: " + e.getMessage());
+            }
         }
     }
 
     private void processPendingScene() {
         if (pendingScene != null) {
             // Initialize the scene before changing to it to avoid OpenGL resource creation during rendering
-            if (pendingScene instanceof RenderingDemoScene) {
-                ((RenderingDemoScene) pendingScene).forceInitialize();
-            } else if (pendingScene instanceof UIDemoScene) {
-                ((UIDemoScene) pendingScene).forceInitialize();
-            } else if (pendingScene instanceof TextureDemoScene) {
-                ((TextureDemoScene) pendingScene).forceInitialize();
-            } else if (pendingScene instanceof BatchDemoScene) {
-                ((BatchDemoScene) pendingScene).forceInitialize();
-            }
             
             SceneManager.ChangeScene(pendingScene, pendingTransition, pendingDuration);
             pendingScene = null;
@@ -314,6 +430,22 @@ public class Engine {
         if (window != null) {
         window.Destroy();
         }
+    }
+
+    public void cycleBackgroundColor() {
+        bgColorIndex = (bgColorIndex + 1) % bgColors.length;
+        float[] color = bgColors[bgColorIndex];
+        glClearColor(color[0], color[1], color[2], 1.0f);
+    }
+
+    // Example save method (call this to save the current scene+UI)
+    public void saveCurrentSceneWithUI(List<com.codebyriley.Core.Scene.Entities.EntityBase> entities) {
+        List<UIElementData> uiData = SceneSerialisation.uiElementsToData(uiManager.getElements());
+        SceneWithUI sceneWithUI = new SceneWithUI();
+        sceneWithUI.mName = "TestScene";
+        sceneWithUI.entities = entities;
+        sceneWithUI.ui = uiData;
+        SceneSerialisation.SaveSceneWithUI(sceneWithUI);
     }
 }
 

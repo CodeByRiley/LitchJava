@@ -11,6 +11,9 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorPosCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetScrollCallback;
+import static org.lwjgl.glfw.GLFW.glfwSetCursorEnterCallback;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 import java.nio.IntBuffer;
@@ -73,7 +76,31 @@ public class WindowBase {
 
             glfwSwapInterval(0);
             
+            // Set up mouse callbacks
+            setupMouseCallbacks();
+            
             glfwShowWindow(windowHandle);
         }
+    }
+    
+    /**
+     * Set up GLFW mouse callbacks for InputMouse integration
+     */
+    private void setupMouseCallbacks() {
+        // Cursor position callback
+        glfwSetCursorPosCallback(windowHandle, (window, xpos, ypos) -> {
+            // This callback is optional since InputMouse.update() polls the position
+            // But it can be useful for immediate position updates
+        });
+        
+        // Scroll callback
+        glfwSetScrollCallback(windowHandle, (window, xoffset, yoffset) -> {
+            com.codebyriley.Core.Input.InputMouse.setScroll(xoffset, yoffset);
+        });
+        
+        // Cursor enter/leave callback
+        glfwSetCursorEnterCallback(windowHandle, (window, entered) -> {
+            com.codebyriley.Core.Input.InputMouse.setMouseInWindow(entered);
+        });
     }
 }

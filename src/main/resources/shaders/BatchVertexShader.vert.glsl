@@ -2,11 +2,13 @@
 layout(location = 0) in vec2 aPos;
 layout(location = 1) in vec4 aColor;
 layout(location = 2) in vec2 aTexCoord;
+layout(location = 3) in int aTexIndex;
 
 uniform vec2 uWindowSize;
 
 out vec4 vColor;
 out vec2 vTexCoord;
+flat out int vTexIndex;
 
 void main() {
     // Convert from screen coordinates to NDC
@@ -17,4 +19,5 @@ void main() {
     
     vColor = aColor;
     vTexCoord = aTexCoord;
+    vTexIndex = aTexIndex;
 } 

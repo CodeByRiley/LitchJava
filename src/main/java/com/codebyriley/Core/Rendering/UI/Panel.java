@@ -57,7 +57,9 @@ public class Panel extends UIElement {
         if (!visible) return;
         
         // Draw panel background and border
-        drawBackground(renderer);
+        float centerX = x + width / 2.0f;
+        float centerY = y + height / 2.0f;
+        drawBackground(renderer); // Already uses center-based coordinates now
         
         // Render children
         for (UIElement child : children) {
@@ -314,5 +316,92 @@ public class Panel extends UIElement {
             }
         }
         return result;
+    }
+
+    /**
+     * Handle mouse click events and propagate to children
+     */
+    @Override
+    protected boolean handleMouseClick(float mouseX, float mouseY, int button) {
+        // Check children from topmost to bottom (reverse order for proper layering)
+        for (int i = children.size() - 1; i >= 0; i--) {
+            UIElement child = children.get(i);
+            if (child.isVisible() && child.isEnabled() && child.contains(mouseX, mouseY)) {
+                if (child.onMouseClick(mouseX, mouseY, button)) {
+                    return true; // Child handled the click, stop propagation
+                }
+            }
+        }
+        // No child handled the click, panel can handle it if needed
+        return false;
+    }
+    
+    /**
+     * Handle mouse hover events and propagate to children
+     */
+    @Override
+    public boolean onMouseHover(float mouseX, float mouseY) {
+        if (!enabled || !visible) return false;
+        
+        // Check if mouse is within panel bounds
+        if (!contains(mouseX, mouseY)) {
+            return false;
+        }
+        
+        // Check children from topmost to bottom
+        for (int i = children.size() - 1; i >= 0; i--) {
+            UIElement child = children.get(i);
+            if (child.isVisible() && child.isEnabled() && child.contains(mouseX, mouseY)) {
+                if (child.onMouseHover(mouseX, mouseY)) {
+                    return true; // Child handled the hover
+                }
+            }
+        }
+        
+        // Mouse is over the panel but not over any child
+        return true;
+    }
+    
+    /**
+     * Handle mouse drag events and propagate to children
+     */
+    public void onMouseDrag(float mouseX, float mouseY) {
+        // Propagate drag events to children that might need them (like sliders)
+        for (UIElement child : children) {
+            if (child.isVisible() && child.isEnabled()) {
+                if (child instanceof Slider) {
+                    Slider slider = (Slider) child;
+                    if (slider.isDragging()) {
+                        slider.onMouseDrag(mouseX, mouseY);
+                        return;
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Handle mouse release events and propagate to children
+     */
+    public void onMouseRelease(float mouseX, float mouseY, int button) {
+        // Propagate release events to children
+        for (UIElement child : children) {
+            if (child.isVisible() && child.isEnabled()) {
+                // Release buttons
+                if (child instanceof Button) {
+                    Button buttonElement = (Button) child;
+                    if (buttonElement.isPressed()) {
+                        buttonElement.release();
+                    }
+                }
+                // Release sliders
+                if (child instanceof Slider) {
+                    Slider slider = (Slider) child;
+                    if (slider.isDragging()) {
+                        slider.onMouseRelease();
+                    }
+                }
+            }
+        }
     }
 } 

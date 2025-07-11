@@ -15,7 +15,9 @@ public class SceneManager {
     private static float mCurrentFade = 0f;
     private static boolean mFadingOut = true;
     private static BatchedRenderer sceneRenderer;
-    private static UIManager uiManager;
+    public static UIManager uiManager;
+    public static TextRenderer textRenderer;
+    public static SceneSerialisation sceneSerialisation;
 
     public static void ChangeScene(SceneBase scene, SceneTransitions transitionType, float duration) {
         mNextScene = scene;
@@ -71,9 +73,10 @@ public class SceneManager {
         }
     }
 
-    public static void Init(BatchedRenderer sceneRenderer, UIManager uiManager) {
+    public static void Init(BatchedRenderer sceneRenderer, UIManager uiManager, TextRenderer textRenderer) {
         SceneManager.sceneRenderer = sceneRenderer;
         SceneManager.uiManager = uiManager;
+        SceneManager.textRenderer = textRenderer;
     }
 
     public static void SetScene(SceneBase scene) {
@@ -82,6 +85,10 @@ public class SceneManager {
 
     public static SceneBase GetCurrentScene() {
         return mCurrentScene;
+    }
+    
+    public static UIManager GetUIManager() {
+        return uiManager;
     }
     
     public static void FixedUpdate(float fixedDeltaTime) {

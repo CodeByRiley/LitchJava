@@ -1,6 +1,8 @@
 package com.codebyriley.Core.Rendering;
 
 import static org.lwjgl.opengl.GL33.*;
+
+import java.nio.ByteBuffer;
 import java.nio.FloatBuffer;
 import org.lwjgl.BufferUtils;
 import com.codebyriley.Core.Rendering.Shaders.ShaderLoader;
@@ -8,13 +10,13 @@ import com.codebyriley.Util.Log;
 
 public class BatchedRenderer {
     private static final int MAX_QUADS = 1000;
-    private static final int VERTEX_SIZE = 8; // x, y, u, v, r, g, b, a (removed rotation and texIndex)
+    private static final int VERTEX_SIZE = 9; // x, y, r, g, b, a, u, v, texIndex
     private static final int QUAD_VERTICES = 4;
     private static final int QUAD_INDICES = 6;
     private static final int MAX_TEXTURES = 16;
 
     private int vao, vbo, ebo, shaderProgram;
-    private FloatBuffer vertexBuffer;
+    private ByteBuffer vertexBuffer;
     private int quadCount = 0;
     private int[] textureSlots = new int[MAX_TEXTURES];
     private int textureSlotIndex = 1; // 0 is reserved for white texture
@@ -63,9 +65,12 @@ public class BatchedRenderer {
         // TexCoord (location 2): u, v
         glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, 6 * Float.BYTES);
         glEnableVertexAttribArray(2);
+        // Texture Index (location 3): texIndex
+        glVertexAttribIPointer(3, 1, GL_INT, stride, 8 * Float.BYTES);
+        glEnableVertexAttribArray(3);
         Log.checkGLErrorDetailed("BatchedRenderer.constructor", "vertex attribute setup");
         glBindVertexArray(0);
-        vertexBuffer = BufferUtils.createFloatBuffer(MAX_QUADS * QUAD_VERTICES * VERTEX_SIZE);
+        vertexBuffer = BufferUtils.createByteBuffer(MAX_QUADS * QUAD_VERTICES * VERTEX_SIZE);
         // Shader
         String vertSource = ShaderLoader.readShaderFromResource("/shaders/BatchVertexShader.vert.glsl");
         String fragSource = ShaderLoader.readShaderFromResource("/shaders/BatchFragmentShader.frag.glsl");
@@ -160,7 +165,16 @@ public class BatchedRenderer {
         };
         
         for (float[] c : corners) {
-            vertexBuffer.put(c[0]).put(c[1]).put(r).put(g).put(b).put(a).put(c[2]).put(c[3]);
+            vertexBuffer.putFloat(c[0]);
+            vertexBuffer.putFloat(c[1]);
+            vertexBuffer.putFloat(r);
+            vertexBuffer.putFloat(g);
+            vertexBuffer.putFloat(b);
+            vertexBuffer.putFloat(a);
+            vertexBuffer.putFloat(c[2]);
+            vertexBuffer.putFloat(c[3]);
+            vertexBuffer.putInt(texIndex);
+            //vertexBuffer.put(c[0]).put(c[1]).put(r).put(g).put(b).put(a).put(c[2]).put(c[3]).put(texIndex);
         }
         quadCount++;
     }
@@ -210,6 +224,15 @@ public class BatchedRenderer {
         if (useTextureLocation != -1) {
             glUniform1i(useTextureLocation, textureSlotIndex > 1 ? 1 : 0);
             Log.checkGLErrorDetailed("BatchedRenderer.flush", "set use texture uniform");
+        }
+        
+        // Set texture uniforms
+        for (int i = 0; i < textureSlotIndex; i++) {
+            int uniformLocation = glGetUniformLocation(shaderProgram, "uTexture" + i);
+            if (uniformLocation != -1) {
+                glUniform1i(uniformLocation, i);
+                Log.checkGLErrorDetailed("BatchedRenderer.flush", "set texture uniform " + i);
+            }
         }
         
         glBindVertexArray(vao);

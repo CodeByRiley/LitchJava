@@ -2,12 +2,14 @@ package com.codebyriley.Core.Input;
 
 import org.lwjgl.glfw.GLFW;
 import com.codebyriley.Core.Rendering.WindowBase;
+import com.codebyriley.Util.Log;
 import com.codebyriley.Util.Math.Vector2f;
 import java.util.HashMap;
 import java.util.Map;
 
 public class InputMouse {
     private static Map<Integer, Boolean> prevButtonStates = new HashMap<>();
+    private static Map<Integer, Boolean> currButtonStates = new HashMap<>();
     private static double mouseX = 0.0;
     private static double mouseY = 0.0;
     private static double prevMouseX = 0.0;
@@ -30,14 +32,18 @@ public class InputMouse {
      * Check if a mouse button is currently pressed
      */
     public static boolean IsButtonPressed(int button) {
-        return GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_PRESS;
+        boolean pressed = GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_PRESS;
+        currButtonStates.put(button, pressed);
+        return pressed;
     }
     
     /**
      * Check if a mouse button is currently released
      */
     public static boolean IsButtonUp(int button) {
-        return GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_RELEASE;
+        boolean up = GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_RELEASE;
+        currButtonStates.put(button, !up);
+        return up;
     }
     
     /**
@@ -45,8 +51,7 @@ public class InputMouse {
      */
     public static boolean IsButtonJustPressed(int button) {
         boolean prev = prevButtonStates.getOrDefault(button, false);
-        boolean curr = GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_PRESS;
-        prevButtonStates.put(button, curr);
+        boolean curr = currButtonStates.getOrDefault(button, false);
         return !prev && curr;
     }
     
@@ -55,8 +60,7 @@ public class InputMouse {
      */
     public static boolean IsButtonJustReleased(int button) {
         boolean prev = prevButtonStates.getOrDefault(button, false);
-        boolean curr = GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_RELEASE;
-        prevButtonStates.put(button, curr);
+        boolean curr = currButtonStates.getOrDefault(button, false);
         return prev && !curr;
     }
     
@@ -188,13 +192,22 @@ public class InputMouse {
         // Store previous position
         prevMouseX = mouseX;
         prevMouseY = mouseY;
-        
         // Get current position
         double[] xpos = new double[1];
         double[] ypos = new double[1];
         GLFW.glfwGetCursorPos(WindowBase.windowHandle, xpos, ypos);
         mouseX = xpos[0];
         mouseY = ypos[0];
+        // Update previous button states to current button states for all tracked buttons
+        prevButtonStates.clear();
+        prevButtonStates.putAll(currButtonStates);
+        // Poll all possible mouse buttons and update current state
+        for (int button = GLFW.GLFW_MOUSE_BUTTON_LEFT; button <= GLFW.GLFW_MOUSE_BUTTON_8; button++) {
+            boolean pressed = GLFW.glfwGetMouseButton(WindowBase.windowHandle, button) == GLFW.GLFW_PRESS;
+            currButtonStates.put(button, pressed);
+        }
+        // Reset scroll values after processing
+        resetScroll();
     }
     
     /**

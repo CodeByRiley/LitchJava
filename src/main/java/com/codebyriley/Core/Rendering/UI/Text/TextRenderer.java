@@ -77,7 +77,7 @@ public class TextRenderer {
     public void drawTextCentered(String text, float centerX, float centerY, Vector3f color, float alpha, float scale) {
         Vector2f textSize = getTextSize(text, scale);
         float x = centerX - textSize.x / 2.0f;
-        float y = centerY - textSize.y / 2.0f;
+        float y = centerY - textSize.y / 2.0f + (textSize.y * 8000f);
         drawText(text, x, y, color, alpha, scale);
     }
     public void drawTextCentered(String text, float centerX, float centerY, Vector3f color, float alpha) {

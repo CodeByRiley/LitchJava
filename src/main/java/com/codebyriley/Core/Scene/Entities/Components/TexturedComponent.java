@@ -2,6 +2,8 @@ package com.codebyriley.Core.Scene.Entities.Components;
 
 import com.codebyriley.Core.Rendering.Textures.Texture;
 import com.codebyriley.Core.Rendering.Textures.TextureLoader;
+import com.codebyriley.Util.Log;
+import com.google.gson.Gson;
 
 public class TexturedComponent extends ComponentBase {
     public Texture mTexture;
@@ -72,5 +74,18 @@ public class TexturedComponent extends ComponentBase {
     
     public boolean isTextureLoaded() {
         return textureLoaded && mTexture != null;
+    }
+
+    @Override
+    public void OnDeserialize(Gson gson) {
+        if(mTexturePath != null && !mTexturePath.isEmpty()) {
+            loadTexture();
+            if(mTexture != null) {
+                textureLoaded = true;
+            } else {
+                Log.error("Failed to load texture: " + mTexturePath);
+                textureLoaded = false;
+            }
+        }
     }
 }

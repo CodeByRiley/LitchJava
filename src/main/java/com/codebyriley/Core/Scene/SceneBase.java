@@ -8,9 +8,11 @@ import com.codebyriley.Core.Scene.Entities.Entity;
 import com.codebyriley.Util.Log;
 
 public abstract class SceneBase {
+    public String mName = "Scene";
     public ArrayList<Entity> entities = new ArrayList<>();
 
-    public SceneBase() {
+    public SceneBase(String name) {
+        mName = name;
     }
 
     public void AddEntity(Entity entity) {

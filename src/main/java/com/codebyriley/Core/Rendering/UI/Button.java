@@ -5,6 +5,8 @@ import com.codebyriley.Core.Rendering.UI.Text.TextRenderer;
 import com.codebyriley.Util.Log;
 import com.codebyriley.Util.Math.Vector3f;
 import java.util.function.Consumer;
+import com.codebyriley.Util.Math.Vector2f;
+import java.lang.Math;
 
 /**
  * A clickable button UI element with text and hover effects.
@@ -19,6 +21,9 @@ public class Button extends UIElement {
     private boolean isHovered;
     private boolean isPressed;
     private Consumer<Button> onClickCallback;
+    private String onClickMessage;
+    private String actionType;
+    private String actionParameter;
     private float textScale;
     
     public Button(float x, float y, float width, float height, String text, TextRenderer textRenderer) {
@@ -32,6 +37,9 @@ public class Button extends UIElement {
         this.isHovered = false;
         this.isPressed = false;
         this.onClickCallback = null;
+        this.onClickMessage = "";
+        this.actionType = "";
+        this.actionParameter = "";
         this.textScale = 1.0f;
         
         // Set default button colors
@@ -56,32 +64,45 @@ public class Button extends UIElement {
             currentBgColor = hoverColor;
         }
         
+
         // Draw background with current color
         if (backgroundAlpha > 0) {
             renderer.addQuad(
-                x, y, width, height,
+                x + width / 2.0f, y + height / 2.0f, width, height,
                 0.0f, 0.0f, 1.0f, 1.0f, // Full texture UV
                 currentBgColor.x, currentBgColor.y, currentBgColor.z, backgroundAlpha,
                 0 // White texture
             );
         }
-        
-        // Draw border
-        drawBackground(renderer);
-        
+
+        renderer.end(); // End batching
+                        // So text can render
+
         // Draw text centered in button using the new TextRenderer
         if (textRenderer != null && text != null && !text.isEmpty()) {
+            float padding = 8.0f;
+            float maxTextWidth = width - padding * 2;
+            float maxTextHeight = height - padding * 2;
+            float scale = textScale;
+            Vector2f textSize = textRenderer.getTextSize(text, scale);
+            if (textSize.x > maxTextWidth || textSize.y > maxTextHeight) {
+                float scaleX = maxTextWidth / textSize.x;
+                float scaleY = maxTextHeight / textSize.y;
+                scale = Math.min(Math.min(scaleX, scaleY), 1.0f); // Only downscale
+            }
             float textX = x + width / 2.0f;
             float textY = y + height / 2.0f;
-            textRenderer.drawTextCentered(text, textX, textY, textColor, 1.0f, textScale);
+            textRenderer.drawTextCentered(text, textX, textY, textColor, 1.0f, scale);
         }
+
+        renderer.begin(); // Begin batching again
+
     }
     
     @Override
     protected boolean handleMouseClick(float mouseX, float mouseY, int button) {
         if (button == 0) { // Left mouse button
             isPressed = true;
-            Log.info("Button clicked");
             if (onClickCallback != null) {
                 onClickCallback.accept(this);
             }
@@ -95,6 +116,45 @@ public class Button extends UIElement {
      */
     public void setOnClick(Consumer<Button> callback) {
         this.onClickCallback = callback;
+    }
+    
+    /**
+     * Set the click callback for this button with a message
+     */
+    public void setOnClick(Consumer<Button> callback, String message) {
+        this.onClickCallback = callback;
+        this.onClickMessage = message;
+    }
+    
+    /**
+     * Set the click callback for this button with action type and parameter
+     */
+    public void setOnClick(Consumer<Button> callback, String message, String actionType, String actionParameter) {
+        this.onClickCallback = callback;
+        this.onClickMessage = message;
+        this.actionType = actionType;
+        this.actionParameter = actionParameter;
+    }
+    
+    /**
+     * Get the onClick message
+     */
+    public String getOnClickMessage() {
+        return onClickMessage;
+    }
+    
+    /**
+     * Get the action type
+     */
+    public String getActionType() {
+        return actionType;
+    }
+    
+    /**
+     * Get the action parameter
+     */
+    public String getActionParameter() {
+        return actionParameter;
     }
     
     /**
